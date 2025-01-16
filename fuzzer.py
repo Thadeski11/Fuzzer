@@ -1,6 +1,7 @@
 import requests
 import argparse
-import time
+from requests_ratelimiter import LimiterSession
+from time import time
 
 parser = argparse.ArgumentParser(prog="Fuzzer", description="Script de fuzzing comum.")
 parser.add_argument("--url", help="Passar a url alvo.")
@@ -35,19 +36,20 @@ def preparar_wordlist(wordlist):
 preparar_wordlist(abrir_arquivo) 
 
 
-#Define e converte o tempo
-def tempo_conv(tempo):
- tempo = float(tempo_req)
- return tempo
+#Trata requisição por segundo
+session = LimiterSession(per_second=int(tempo_req))
+start = time()
 
 #Executa o script na url 
 def capturar_informacao(url):
  for linhas in arquivo_completo:
   nova_url = url.replace("FUZZ", linhas) 
-  resposta = requests.get(nova_url)
+  resposta = session.get(nova_url)
+
   status_code = resposta.status_code
   tamanho_pagina = len(resposta.text)
-  time.sleep(tempo_conv(tempo_req))
+
+  time()
   
   
   print(f"{nova_url} -- STATUS {status_code}  -  LENGHT {tamanho_pagina}")
@@ -55,3 +57,4 @@ def capturar_informacao(url):
  
 
 capturar_informacao(url_alvo)
+
