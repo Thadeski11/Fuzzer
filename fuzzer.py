@@ -38,11 +38,14 @@ preparar_wordlist(abrir_arquivo)
 #Trata requisição por segundo
 session = LimiterSession(per_second=int(tempo_req))
 
+headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
+
+
 #Executa o script na url 
 def capturar_informacao(url):
  for linhas in arquivo_completo:
   nova_url = url.replace("FUZZ", linhas) 
-  resposta = session.get(nova_url)
+  resposta = session.get(nova_url, headers=headers, timeout=10)
 
   status_code = resposta.status_code
   tamanho_pagina = len(resposta.text)
