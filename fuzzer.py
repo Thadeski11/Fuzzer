@@ -56,7 +56,7 @@ def capturar_informacao(url):
    print(f"{nova_url} -- STATUS {status_code}  -  LENGHT {tamanho_pagina}")
 
    if status_code in status_force:
-    time.sleep(60)
+    time.sleep(30)
     
   except requests.exceptions.RequestException as e:
    print(f"Erro na url [{nova_url}] : {e}")
