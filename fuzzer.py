@@ -1,66 +1,44 @@
 import requests
 import argparse
-from requests_ratelimiter import LimiterSession
+from ratelimit import limits, sleep_and_retry
 from requests.exceptions import RequestException
 import time
 
 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
 
 parser = argparse.ArgumentParser(prog="Fuzzer", description="Script de fuzzing comum.")
-parser.add_argument("--url", help="Passar a url alvo.")
+parser.add_argument("--url", help="Passar a url alvo (Recomendado o uso de ' ').")
 parser.add_argument("--wordlist", help="Passar a payload de testes.")
 parser.add_argument("--time",  help="Passar o delay por segundo para cada requisição.")
 args = parser.parse_args()
 
+if args.time:
+	None
+else:
+	args.time = 5
 
-#Argumentos
-arquivo_wordlist = args.wordlist
-url_alvo = args.url
-tempo_req = args.time
-
-
-abrir_arquivo = open(f'{arquivo_wordlist}', 'r')
-
-#Lista da wordlist
-arquivo_completo = []
-
-#Função de preparação para payload
-def preparar_wordlist(wordlist):
- linhas_do_arquivo_n = []
-
- for linha in wordlist:
-  linhas_do_arquivo_n.append(linha)
-
- linhas_do_arquivo = [linhas[:-1] for linhas in linhas_do_arquivo_n]
- for linha in linhas_do_arquivo:
-  arquivo_completo.append(linha) 
-
-#Executa função para montar lista da wordlist
-preparar_wordlist(abrir_arquivo) 
-
-
-#Trata requisição por segundo
-session = LimiterSession(per_second=int(tempo_req))
-
-#Executa o script na url 
+@sleep_and_retry
+@limits(calls=int(args.time), period=1) 
 def capturar_informacao(url):
- status_force = [429, 500, 502, 503, 504]
- for linhas in arquivo_completo:
-  try:
-   nova_url = url.replace("FUZZ", linhas) 
-   resposta = session.get(nova_url, headers=headers, timeout=10)
+	status_force = [429, 500, 502, 503, 504]
+	with open(args.wordlist) as f:
+		for i in f.readlines():
+			linhas = i.replace("\n", "")
+			try:
+				nova_url = url.replace("FUZZ", linhas)
+				resposta = requests.get(nova_url, headers=headers, timeout=10)
 
-   status_code = resposta.status_code
-   tamanho_pagina = len(resposta.text)
+				status_code = resposta.status_code
+				tamanho_pagina = len(resposta.text)
   
-   print(f"{nova_url} -- STATUS {status_code}  -  LENGHT {tamanho_pagina}")
-
-   if status_code in status_force:
-    time.sleep(30)
+				print(f"{nova_url} -- STATUS {status_code}  -  LENGHT {tamanho_pagina}")
+				if status_code in status_force:
+					time.sleep(30)
     
-  except requests.exceptions.RequestException as e:
-   print(f"Erro na url [{nova_url}] : {e}")
-   continue
+			except requests.exceptions.RequestException as e:
+				print(f"Erro na url [{nova_url}] : {e}")
+				continue
 
  
-capturar_informacao(url_alvo)
+
+capturar_informacao(args.url)
