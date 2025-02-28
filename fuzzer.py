@@ -21,7 +21,7 @@ def fuzzing(url):
 			status_code = resposta.status_code
 			tamanho_pagina = len(resposta.text)
   
-			print(f"{url} -- STATUS {status_code}  -  LENGHT {tamanho_pagina}")
+			print(f"{url:<40} {status_code:>25} {tamanho_pagina:>25}")
 			if status_code in status_force:
 				time.sleep(30)
 			
@@ -33,11 +33,10 @@ def fuzzing(url):
 		status_code = resposta.status_code
 		tamanho_pagina = len(resposta.text)
   
-		print(f"{url} -- STATUS {status_code}  -  LENGHT {tamanho_pagina}")
+		print(f"{url:<40} {status_code:>25} {tamanho_pagina:>25}")
 		if status_code in status_force:
 			time.sleep(30)
     
-
 def fuzz_threading(wordlist):
 	escolha_s_n = []
 	while True:
@@ -63,16 +62,21 @@ def fuzz_threading(wordlist):
 				try: 
 					linhas = linhas.strip()
 					nova_url = args.url.replace("FUZZ", linhas)
-					arq.write(nova_url)
-					arq.write("\n")
 					t = threading.Thread(target=fuzzing, args=(nova_url,))
+					resposta = requests.get(nova_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"})
+					status_code = resposta.status_code
+					if status_code == 200:
+						arq.write(nova_url)
+						arq.write("\n")
+					else:
+						None
 					threads.append(t)
 					t.start()
 		
 				except requests.exceptions.RequestException as e:
 					print(f"Erro em [{nova_url}] : {e}")
 					continue
-	elif escolha_s_n[1] == 1:
+	elif escolha_s_n[0] == 1:
 		for linhas in wordlist:
 			try:
 				linhas = linhas.strip()
@@ -109,16 +113,23 @@ def fuzz_time(wordlist):
 				try: 
 					linhas = linhas.strip()
 					nova_url = args.url.replace("FUZZ", linhas)
-					arq.write(nova_url)
-					arq.write("\n")
 					fuzzing(nova_url)
+					resposta = requests.get(nova_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"})
+					status_code = resposta.status_code
+					if status_code == 200:
+						arq.write(nova_url)
+						arq.write("\n")
+					else:
+						None
 					time.sleep(args.time)
 				except requests.exceptions.RequestException as e:
 					print(f"Erro em [{nova_url}] : {e}")
 					continue
-	elif escolha_s_n[1] == 1:
+	elif escolha_s_n[0] == 1:
 		for linhas in wordlist:
 			try:
+				linhas = linhas.strip()
+				nova_url = args.url.replace("FUZZ", linhas)
 				fuzzing(nova_url)
 				time.sleep(args.time)
 			except requests.exceptions.RequestException as e:
