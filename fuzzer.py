@@ -6,7 +6,7 @@ import threading
 import queue
 
 parser = argparse.ArgumentParser(prog="Fuzzer", description="Script de fuzzing comum.")
-parser.add_argument("--url", help="Passar a url alvo (Recomendado o uso de ' ').")
+parser.add_argument("--url", help="Passar a url alvo (Recomendado o uso de ' ') Ex: 'https://google.com/FUZZ/?family=FUZZ'.")
 parser.add_argument("--wordlist", help="Passar a payload de testes.")
 parser.add_argument("--time", type=float, default=1, help="Para baixas taxas de requisição.")
 parser.add_argument("--threads", type=int, help="Para altas taxas de requisição.")
