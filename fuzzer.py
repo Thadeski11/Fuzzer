@@ -120,7 +120,8 @@ def fuzz_time(wordlist):
 			try:
 				linhas = linhas.strip()
 				nova_url = args.url.replace("FUZZ", linhas)
-				resultados.append(fuzzing(nova_url))
+				testes, status = fuzzing(nova_url)
+				resultados.append(testes)
 				time.sleep(args.time)
 			except requests.exceptions.RequestException as e:
 				print(f"Erro em [{nova_url}] : {e}")
