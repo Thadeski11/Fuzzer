@@ -1,136 +1,54 @@
-import requests
+import aiohttp
+import asyncio
 import argparse
 from requests.exceptions import RequestException
 import time
-import threading
-import queue
 
 parser = argparse.ArgumentParser(prog="Fuzzer", description="Script de fuzzing comum.")
-parser.add_argument("--url", required=True, help="Passar a url alvo (Recomendado o uso de ' ') Ex: 'https://google.com/FUZZ/?family=FUZZ'.")
-parser.add_argument("--wordlist", required=True, help="Passar a payload de testes.")
-parser.add_argument("--time", type=float, default=1, help="Para baixas taxas de requisição.")
-parser.add_argument("--threads", type=int, help="Para altas taxas de requisição.")
-parser.add_argument("--output", help="Salva resultados em um arquivo.")
+parser.add_argument("-u", "--url", type=str, help="Passar a url alvo (Recomendado o uso de ' ').")
+parser.add_argument("-w", "--wordlist", help="Passar a payload de testes.")
+parser.add_argument("-t", "--time", type=int, default=1, help="Requests/Sec")
+parser.add_argument("-o", "--output", help="Salva resultados em um arquivo.")
+parser.add_argument("-s", "--scrapout", help="Salvar as urls [200] em um arquivo para possível scrap.")
 args = parser.parse_args()
 
-def escolha_arquivo_scrap():
-	escolha_s_n = 0
-	while True:
-		urls_salvas = str(input("Caso queira guardar as URLs testadas em um arquivo, digite [S], caso não queira guardar digite [N]: ")).upper()
-		if urls_salvas == "S":
-			escolha_s_n = 0
-			return escolha_s_n
-			break
-		elif urls_salvas == "N":
-			escolha_s_n = 1
-			return escolha_s_n
-			break
-		else:
-			print("Escolha um valor válido...")
-			time.sleep(0.5)
-			continue
 
-def fuzzing(url, resultado_queue=None):
-	if args.threads:
-		with semaforo:
-			headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
-			status_force = [429, 500]
-		
-			resposta = requests.get(url, headers=headers)
-			status_code = resposta.status_code
-			tamanho_pagina = len(resposta.text)
-			resultado_formatado = f"{url:<40} {status_code:>25} {tamanho_pagina:>25}"  			
+max_req_per_second = args.time
+semaphore = asyncio.Semaphore(int(max_req_per_second))
+async def fuzzing(session, url):
+	async with semaphore:
+		await asyncio.sleep(1)
+		async with session.get(url, allow_redirects=False) as req:
+			status_code = req.status
+			html = await req.text()
+			lenght = len(html)
 
-			print(resultado_formatado)
-			if status_code in status_force:
-				time.sleep(30)
+			return url, status_code, lenght
 
-			if resultado_queue is not None:
-				resultado_queue.put((resultado_formatado))
-			
-			return resultado_formatado
-	else:
-		headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
-		status_force = [429, 500]
-		
-		resposta = requests.get(url, headers=headers)
-		status_code = resposta.status_code
-		tamanho_pagina = len(resposta.text)
-		resultado_formatado = f"{url:<40} {status_code:>25} {tamanho_pagina:>25}"  
-
-		print(resultado_formatado)
-		if status_code in status_force:
-			time.sleep(30)
-
-		return resultado_formatado, status_code
-
-def fuzz_threading(wordlist):
-	global semaforo
-	semaforo = threading.Semaphore(args.threads)
-	threads = []
-	resultado_queue = queue.Queue()
-	
+async def main(wordlist):
+	headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.5615.137 Safari/537.36"}
+	urls = []
 	resultados = []
+	with open(wordlist, "r") as w:
+		for i in w:
+			i = i.strip()
+			url_true = args.url.replace("FUZZ", i)
+			urls.append(url_true)
 
-	for linhas in wordlist:
-		try:
-			linhas = linhas.strip()
-			nova_url = args.url.replace("FUZZ", linhas)
-			t = threading.Thread(target=fuzzing, args=(nova_url, resultado_queue, ))
-			threads.append(t)
-			t.start()
-		except requests.exceptions.RequestException as e:
-			print(f"Erro em [{nova_url}] : {e}")
-			continue
+	async with aiohttp.ClientSession(headers=headers) as session:
+		tasks = [fuzzing(session, url) for url in urls]
+		results = await asyncio.gather(*tasks)
 
-	for t in threads:
-		t.join()
-	
-	while not resultado_queue.empty():
-		testes = resultado_queue.get()
-		resultados.append(testes)
-
-
+	for url, status_code, lenght in results:
+		rs = f"{url:<40} {status_code:>25} {lenght:>25}"
+		print(rs)
+		resultados.append(rs)
+		if args.scrapout:
+			if status_code == 200 or status_code == 302:
+				with open(args.scrapout, "w") as scrap:
+					scrap.write(url)
+					scrap.write("\n")
 	return resultados
-
-def fuzz_time(wordlist):
-	escolha = escolha_arquivo_scrap()	
-	
-	status = 0
-	resultados = []	
-	if escolha == 0:
-		arquivo_urls_nome = str(input("Digite o nome do arquivo: "))
-		with open(arquivo_urls_nome, 'w') as arq:
-			for linhas in wordlist:
-				try: 
-					linhas = linhas.strip()
-					nova_url = args.url.replace("FUZZ", linhas)
-					testes, status = fuzzing(nova_url)
-					resultados.append(testes)
-					if status == 200:
-						arq.write(nova_url)
-						arq.write("\n")
-					time.sleep(args.time)
-				except requests.exceptions.RequestException as e:
-					print(f"Erro em [{nova_url}] : {e}")
-					continue
-
-	elif escolha == 1:
-		for linhas in wordlist:
-			try:
-				linhas = linhas.strip()
-				nova_url = args.url.replace("FUZZ", linhas)
-				testes, status = fuzzing(nova_url)
-				resultados.append(testes)
-				time.sleep(args.time)
-			except requests.exceptions.RequestException as e:
-				print(f"Erro em [{nova_url}] : {e}")
-				continue
-	
-	return resultados
-
-with open(args.wordlist) as f:
-	wordlist = f.readlines()
 
 def output(resultado, nome_arquivo):
 		if nome_arquivo:
@@ -141,9 +59,6 @@ def output(resultado, nome_arquivo):
 		else:
 			None
 
-if args.threads:
-	resultados = fuzz_threading(wordlist)
-	output(resultados, args.output)
-else:
-	resultados = fuzz_time(wordlist)
-	output(resultados, args.output)
+
+resultados = asyncio.run(main(args.wordlist))
+output(resultados, args.output)
