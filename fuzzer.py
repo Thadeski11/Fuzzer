@@ -1,7 +1,6 @@
 import aiohttp
 import asyncio
 import argparse
-from requests.exceptions import RequestException
 import time
 
 parser = argparse.ArgumentParser(prog="Fuzzer", description="Script de fuzzing comum.")
