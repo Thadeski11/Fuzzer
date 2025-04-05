@@ -1,7 +1,6 @@
 import aiohttp
 import asyncio
 import argparse
-import time
 
 parser = argparse.ArgumentParser(prog="Fuzzer", description="Script de fuzzing comum.")
 parser.add_argument("-u", "--url", type=str, help="Passar a url alvo (Recomendado o uso de ' ').")
