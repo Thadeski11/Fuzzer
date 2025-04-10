@@ -16,12 +16,16 @@ semaphore = asyncio.Semaphore(int(max_req_per_second))
 async def fuzzing(session, url):
 	async with semaphore:
 		await asyncio.sleep(1)
-		async with session.get(url, allow_redirects=False) as req:
-			status_code = req.status
-			html = await req.text()
-			lenght = len(html)
+		try:
+			async with session.get(url, allow_redirects=False) as req:
+				status_code = req.status
+				html = await req.text()
+				lenght = len(html)
 
-			return url, status_code, lenght
+				return url, status_code, lenght
+		except asyncio.TimeoutError:
+			await asyncio.sleep(5)
+			return url, None, None
 
 async def main(wordlist):
 	headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.5615.137 Safari/537.36"}
