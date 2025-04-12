@@ -24,7 +24,9 @@ async def fuzzing(session, url):
 
 				return url, status_code, lenght
 		except asyncio.TimeoutError:
-			await asyncio.sleep(5)
+			await asyncio.sleep(3)
+			return url, None, None
+		except aiohttp.ClientError:
 			return url, None, None
 
 async def main(wordlist):
