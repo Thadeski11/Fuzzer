@@ -44,14 +44,15 @@ async def main(wordlist):
 		results = await asyncio.gather(*tasks)
 
 	for url, status_code, lenght in results:
-		rs = f"{url:<40} {status_code:>25} {lenght:>25}"
-		print(rs)
-		resultados.append(rs)
-		if args.scrapout:
-			if status_code == 200 or status_code == 302:
-				with open(args.scrapout, "w") as scrap:
-					scrap.write(url)
-					scrap.write("\n")
+		if status_code is not None and lenght is not None:
+			rs = f"{url:<40} {status_code:>25} {lenght:>25}"
+			print(rs)
+			resultados.append(rs)
+			if args.scrapout:
+				if status_code == 200 or status_code == 302:
+					with open(args.scrapout, "w") as scrap:
+						scrap.write(url)
+						scrap.write("\n")
 	return resultados
 
 def output(resultado, nome_arquivo):
