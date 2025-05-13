@@ -28,6 +28,10 @@ async def fuzzing(session, url):
 			return url, None, None
 		except aiohttp.ClientError:
 			return url, None, None
+		except UnicodeDecodeError:
+			print(f"Unicode error {url}")
+			return url, None, None
+
 
 async def main(wordlist):
 	headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.5615.137 Safari/537.36"}
