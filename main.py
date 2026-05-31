@@ -3,7 +3,7 @@ from core.output import Output
 import asyncio
 import argparse
 
-parser = argparse.ArgumentParser(prog="Fuzzer", description="Script de fuzzing comum.")
+parser = argparse.ArgumentParser(prog="Fuzzer", description="")
 parser.add_argument("-u", "--url", type=str, required=True, help="Passar a url alvo (Recomendado o uso de ' ').")
 parser.add_argument("-w", "--wordlist", required=True, help="Passar a payload de testes.")
 parser.add_argument("-t", "--time", type=int, default=1, help="Requests/Sec")
