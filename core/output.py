@@ -10,7 +10,7 @@ class Output():
 
 	def text_file(self):
 		with open(self.output_file, "w") as o:
-			if "body" in self.results[0]:
+			if len(self.results) > 0 and "body" in self.results[0]:
 				for lines in self.results:
 					o.write(f"{lines['url']:<100} {lines['status_code']:>10} {lines['length']:>10} {lines['body']:>20}\n")	
 			else:
@@ -36,6 +36,9 @@ class Output():
 
 
 	def csv_file(self):
+		if not self.results:
+			return
+			
 		with open(self.output_file, "w") as o:
 			writer = csv.DictWriter(o, fieldnames=self.results[0].keys())
 			writer.writeheader()
