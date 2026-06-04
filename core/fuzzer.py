@@ -45,6 +45,9 @@ class Fuzzer():
 		all_url = []
 		all_body = []
 		done_results = []
+
+		connector = aiohttp.TCPConnector(ssl=False)
+		
 		with open(self.wordlist, "r") as w:
 			if self.body is None:
 				for lines in w:
@@ -57,7 +60,7 @@ class Fuzzer():
 					body = self.body.replace("FUZZ", lines.strip())
 					all_body.append(body)
 				
-		async with aiohttp.ClientSession(headers=self.headers) as session:
+		async with aiohttp.ClientSession(headers=self.headers, connector=connector) as session:
 			tasks = []
 			if self.body is None:
 				for url in all_url:
